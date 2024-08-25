@@ -1,0 +1,173 @@
+﻿@{
+    ViewData["Title"] = "Empleados";
+}
+
+@section styles
+{
+    <link href="~/lib/datatables.net-bs5/datatables.bootstrap5.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
+    <style>
+        /* Estilo del encabezado de la tabla */
+        #myTable thead th {
+            background-color: #343a40; /* Color de fondo gris oscuro */
+            color: white; /* Color de texto blanco */
+            text-align: center; /* Centrado del texto */
+        }
+
+        /* Filas alternas de la tabla */
+        #myTable tbody tr:nth-child(odd) {
+            background-color: #f8f9fa; /* Color de fondo para filas impares */
+        }
+
+        #myTable tbody tr:nth-child(even) {
+            background-color: #ffffff; /* Color de fondo para filas pares */
+        }
+
+        /* Centrar texto de las celdas */
+        #myTable tbody td {
+            text-align: center; /* Centrar texto */
+            vertical-align: middle; /* Alineación vertical al centro */
+        }
+
+        /* Estilo para el botón de agregar empleado */
+        .btn-success {
+            background-color: #28a745; /* Verde Bootstrap */
+            border-color: #28a745;
+        }
+
+            .btn-success:hover {
+                background-color: #218838;
+                border-color: #1e7e34;
+            }
+
+        /* Botones de acción */
+        .btn-group .btn {
+            margin: 0 5px;
+        }
+
+        /* Estilo adicional para la tabla */
+        #myTable {
+            width: 100%;
+            border-radius: 8px; /* Bordes redondeados */
+            overflow: hidden; /* Esconder desbordamientos */
+        }
+    </style>
+}
+
+<h1 class="text-primary">Empleados</h1>
+
+<div class="row mb-3">
+    <div class="col-md-3">
+        <a asp-controller="Employee" asp-action="Create" class="btn btn-success">AGREGAR NUEVO EMPLEADO</a><br /><br />
+    </div>
+</div>
+
+<table id="myTable" class="table table-striped table-bordered">
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Apellido</th>
+            <th>DUI</th>
+            <th>Telefono</th>
+            <th>Tipo</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in ViewBag.Employees)
+        {
+            <tr>
+                <td>@item.Nombre</td>
+                <td>@item.Apellido</td>
+                <td>@item.Dui</td>
+                <td>@item.NumeroTelefonico</td>
+                <td>@item.TypeEmployee.Nombre</td>
+                <td>@(item.IsActive ? "Activo" : "Inactivo")</td>
+                <td class="text-center">
+                    <div class="btn-group" role="group">
+                        <a asp-controller="Employee" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-warning">Editar</a>
+                        <button class="btn btn-danger" onclick="confirmDelete(event, @item.Id)">Eliminar</button>
+                    </div>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+    <script src="~/lib/datatables.net-bs5/datatables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Captura los parámetros de la URL
+            var urlParams = new URLSearchParams(window.location.search);
+
+            // Mostrar alertas basadas en los parámetros
+            if (urlParams.has('success')) {
+                Swal.fire({
+                    title: "¡Buen trabajo!",
+                    text: "El empleado se ha guardado exitosamente.",
+                    icon: "success"
+                });
+            }
+
+            if (urlParams.has('editSuccess')) {
+                Swal.fire({
+                    title: "¡Actualización exitosa!",
+                    text: "El empleado se ha actualizado correctamente.",
+                    icon: "success"
+                });
+            }
+
+            // Inicializar DataTable con opciones en español
+            $('#myTable').DataTable({
+                "language": {
+                    "lengthMenu": "Mostrar _MENU_ registros",
+                    "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
+                    "paginate": {
+                        "first": "Primero",
+                        "last": "Último",
+                        "next": "Siguiente",
+                        "previous": "Anterior"
+                    }
+                }
+            });
+        });
+
+        // Función para mostrar SweetAlert de confirmación
+        function confirmDelete(event, id) {
+            event.preventDefault();
+
+            Swal.fire({
+                title: '¿Deseas Eliminar este dato?',
+                text: "Si estas seguro presiona Eliminar!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch('/Employee/DeleteConfirmed', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                        },
+                        body: new URLSearchParams({
+                            'id': id
+                        })
+                    }).then(response => {
+                        if (response.ok) {
+                            window.location.reload();
+                        } else {
+                            Swal.fire('Error', 'No se pudo eliminar el empleado.', 'error');
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+}
